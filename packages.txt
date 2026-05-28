@@ -1,5 +1,1 @@
-<<<<<<< HEAD
-tesseract-ocr
-=======
 libzbar0
->>>>>>> fd41a63a86ca67d2edc9cf95ec475b9dbecf5d1c
