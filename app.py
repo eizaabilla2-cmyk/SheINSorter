@@ -135,7 +135,6 @@ elif choice == "🔍 فرز البضاعة غداً":
             else:
                 st.error("❌ هذه القطعة غير مسجلة!")
 
-            else:
             st.subheader("📊 ملخص الطلبيات")
             df = pd.read_csv("products.csv")
             st.metric("إجمالي القطع", len(df))
