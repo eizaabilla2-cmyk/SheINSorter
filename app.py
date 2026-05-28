@@ -128,34 +128,27 @@ elif choice == "🔍 فرز البضاعة غداً":
             st.success(f"👤 الزبونة: {item['customer_name']}")
             st.info(f"📌 الـ SKU: {item['sku']}")
             st.write(f"الحالة: {item['status']}")
+
             if st.button("✅ تم الفرز"):
                 df.loc[df["sku"].astype(str).str.lower() == str(item["sku"]).lower(), "status"] = "تم فرزه"
                 df.to_csv("products.csv", index=False)
                 st.rerun()
-            else:
-                st.error("❌ هذه القطعة غير مسجلة!")
-
-            st.subheader("📊 ملخص الطلبيات")
-            df = pd.read_csv("products.csv")
-            st.metric("إجمالي القطع", len(df))
-            st.dataframe(df, use_container_width=True)
-
-            csv = df.to_csv(index=False).encode("utf-8")
-            st.download_button("📥 تحميل الملف للطباعة", data=csv, file_name="orders.csv", mime="text/csv")
         else:
-            st.subheader("📊 ملخص الطلبيات")
+            st.error("❌ هذه القطعة غير مسجلة!")
 
-            df = pd.read_csv("products.csv")
+else:
+    st.subheader("📊 ملخص الطلبيات")
 
-            st.metric("إجمالي القطع", len(df))
+    df = pd.read_csv("products.csv")
 
-            st.dataframe(df, use_container_width=True)
+    st.metric("إجمالي القطع", len(df))
+    st.dataframe(df, use_container_width=True)
 
-            csv = df.to_csv(index=False).encode("utf-8")
+    csv = df.to_csv(index=False).encode("utf-8")
 
-            st.download_button(
-                "📥 تحميل الملف للطباعة",
-                data=csv,
-                file_name="orders.csv",
-                mime="text/csv"
-            )
+    st.download_button(
+        "📥 تحميل الملف للطباعة",
+        data=csv,
+        file_name="orders.csv",
+        mime="text/csv"
+    )
