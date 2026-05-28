@@ -18,12 +18,12 @@ def extract_skus_from_text(text):
         return []
 
     cleaned = text.replace("：", ":")
-    cleaned = cleaned.replace(" ", "")
     cleaned = cleaned.replace("\n", " ")
 
-    skus = re.findall(r"(?:si|sz)[a-zA-Z0-9]{8,30}", cleaned, re.IGNORECASE)
+    # يلقط أكواد شي إن اللي تبدأ بحرف s وبعدها حروف اختيارية ثم أرقام
+    # مثل: si..., sz..., sb..., swnight...
+    skus = re.findall(r"\b[sS][a-zA-Z]{0,12}\d{8,30}\b", cleaned)
 
-    # تنظيف وتوحيد بدون تكرار مع الحفاظ على الترتيب
     unique_skus = []
     seen = set()
 
