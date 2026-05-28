@@ -1,7 +1,6 @@
 streamlit
 pandas
 opencv-python-headless
-zxing-cpp
 pytesseract
 numpy
 Pillow
