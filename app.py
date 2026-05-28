@@ -142,3 +142,20 @@ elif choice == "🔍 فرز البضاعة غداً":
 
             csv = df.to_csv(index=False).encode("utf-8")
             st.download_button("📥 تحميل الملف للطباعة", data=csv, file_name="orders.csv", mime="text/csv")
+        else:
+            st.subheader("📊 ملخص الطلبيات")
+
+            df = pd.read_csv("products.csv")
+
+            st.metric("إجمالي القطع", len(df))
+
+            st.dataframe(df, use_container_width=True)
+
+            csv = df.to_csv(index=False).encode("utf-8")
+
+            st.download_button(
+                "📥 تحميل الملف للطباعة",
+                data=csv,
+                file_name="orders.csv",
+                mime="text/csv"
+            )
