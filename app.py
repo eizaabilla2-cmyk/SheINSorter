@@ -96,7 +96,6 @@ def apply_theme():
         h1, h2, h3 {
             color: #F7F1E3 !important;
             font-weight: 800 !important;
-            letter-spacing: -0.5px;
         }
 
         .main-title {
@@ -124,18 +123,20 @@ def apply_theme():
             box-shadow: 0 8px 30px rgba(0,0,0,0.25);
         }
 
-        .success-card {
-            background: rgba(31, 122, 68, 0.16);
-            border: 1px solid rgba(70, 220, 120, 0.3);
+        .done-card {
+            background: rgba(31, 122, 68, 0.18);
+            border: 1px solid rgba(70, 220, 120, 0.35);
             border-radius: 18px;
             padding: 16px;
+            margin: 10px 0;
         }
 
-        .warn-card {
+        .pending-card {
             background: rgba(212, 175, 55, 0.13);
             border: 1px solid rgba(212, 175, 55, 0.35);
             border-radius: 18px;
             padding: 16px;
+            margin: 10px 0;
         }
 
         div.stButton > button {
@@ -154,17 +155,10 @@ def apply_theme():
         }
 
         div[data-testid="stTextInput"] input,
-        div[data-testid="stTextArea"] textarea,
-        div[data-testid="stSelectbox"] {
+        div[data-testid="stTextArea"] textarea {
             background: #15171C !important;
             color: #F7F1E3 !important;
             border-radius: 14px !important;
-        }
-
-        .stDataFrame {
-            border: 1px solid rgba(212, 175, 55, 0.2);
-            border-radius: 18px;
-            overflow: hidden;
         }
 
         [data-testid="stMetricValue"] {
@@ -183,7 +177,7 @@ def apply_theme():
 apply_theme()
 
 st.markdown('<div class="main-title">📦 نظام فرز طلبات شي إن الذكي</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">فرز أسرع، أخطاء أقل، وتتبع أوضح لكل زبونة.</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">فرز أسرع، تتبع أوضح، ومعرفة فورية مين خلص طلبها ومين ضايل لها.</div>', unsafe_allow_html=True)
 st.markdown("---")
 
 menu = [
@@ -200,62 +194,53 @@ df = load_data()
 if choice == "📥 تسجيل سلة زبونة":
     st.subheader("📝 تفكيك السلة وحفظ البيانات")
 
-    with st.container():
-        st.markdown('<div class="gold-card">', unsafe_allow_html=True)
+    cust_name = st.text_input("👤 اسم الزبونة:")
+    basket_data = st.text_area("📋 الصقي هنا كل أكواد أو تفاصيل الطلب:", height=220)
 
-        cust_name = st.text_input("👤 اسم الزبونة:")
-        basket_data = st.text_area("📋 الصقي هنا كل أكواد أو تفاصيل الطلب:", height=220)
+    found_skus = extract_skus_from_text(basket_data)
 
-        found_skus = extract_skus_from_text(basket_data)
+    if basket_data:
+        st.info(f"تم رصد {len(found_skus)} كود محتمل داخل النص.")
 
-        if basket_data:
-            st.info(f"تم رصد {len(found_skus)} كود محتمل داخل النص.")
+    if st.button("🔥 حفظ القطع تلقائياً"):
+        if cust_name and basket_data:
+            skus = extract_skus_from_text(basket_data)
 
-        if st.button("🔥 حفظ القطع تلقائياً"):
-            if cust_name and basket_data:
-                skus = extract_skus_from_text(basket_data)
+            if skus:
+                new_items = []
+                repeated = []
 
-                if skus:
-                    new_items = []
-                    repeated = []
+                for sku in skus:
+                    exists = df["sku"].astype(str).str.lower().eq(sku.lower()).any()
 
-                    for sku in skus:
-                        exists = df["sku"].astype(str).str.lower().eq(sku.lower()).any()
+                    if not exists:
+                        new_items.append({
+                            "sku": sku,
+                            "customer_name": cust_name,
+                            "status": "لم يتم فرزه"
+                        })
+                    else:
+                        repeated.append(sku)
 
-                        if not exists:
-                            new_items.append({
-                                "sku": sku,
-                                "customer_name": cust_name,
-                                "status": "لم يتم فرزه"
-                            })
-                        else:
-                            repeated.append(sku)
+                if new_items:
+                    df = pd.concat([df, pd.DataFrame(new_items)], ignore_index=True)
+                    save_data(df)
 
-                    if new_items:
-                        df = pd.concat([df, pd.DataFrame(new_items)], ignore_index=True)
-                        save_data(df)
+                    st.success(f"✅ تم حفظ {len(new_items)} قطعة باسم ({cust_name})!")
 
-                        st.success(f"✅ تم حفظ {len(new_items)} قطعة باسم ({cust_name})!")
+                    with st.expander("عرض الأكواد التي تم حفظها"):
+                        for item in new_items:
+                            st.write(item["sku"])
 
-                        with st.expander("عرض الأكواد التي تم حفظها"):
-                            for item in new_items:
-                                st.write(item["sku"])
+                if repeated:
+                    st.warning(f"⚠️ تم تجاهل {len(repeated)} كود مكرر.")
 
-                    if repeated:
-                        st.warning(f"⚠️ تم تجاهل {len(repeated)} كود مكرر.")
-
-                        with st.expander("عرض الأكواد المكررة"):
-                            for sku in repeated:
-                                st.write(sku)
-
-                    if not new_items and repeated:
-                        st.warning("كل الأكواد موجودة مسبقاً.")
-                else:
-                    st.error("❌ لم أجد أكواد صالحة. تأكدي أن الأكواد تبدأ بحرف S وتحتوي أرقام.")
+                if not new_items and repeated:
+                    st.warning("كل الأكواد موجودة مسبقاً.")
             else:
-                st.error("يجب إدخال اسم الزبونة والنص.")
-
-        st.markdown('</div>', unsafe_allow_html=True)
+                st.error("❌ لم أجد أكواد صالحة. تأكدي أن الأكواد تبدأ بحرف S وتحتوي أرقام.")
+        else:
+            st.error("يجب إدخال اسم الزبونة والنص.")
 
 
 elif choice == "🔍 فرز البضاعة":
@@ -283,7 +268,7 @@ elif choice == "🔍 فرز البضاعة":
         if not res.empty:
             item = res.iloc[0]
 
-            st.markdown('<div class="success-card">', unsafe_allow_html=True)
+            st.markdown('<div class="done-card">', unsafe_allow_html=True)
             st.success(f"👤 الزبونة: {item['customer_name']}")
             st.info(f"📌 الـ SKU: {item['sku']}")
             st.write(f"الحالة: {item['status']}")
@@ -308,69 +293,84 @@ elif choice == "🔍 فرز البضاعة":
 
 
 elif choice == "📊 لوحة التحكم":
-    st.subheader("📊 ملخص الطلبيات")
+    st.subheader("📊 لوحة التحكم")
 
     total = len(df)
     sorted_count = len(df[df["status"] == "تم فرزه"])
-    unsorted_count = len(df[df["status"] != "تم فرزه"])
+    remaining_count = total - sorted_count
 
     col1, col2, col3 = st.columns(3)
     col1.metric("إجمالي القطع", total)
-    col2.metric("تم فرزها", sorted_count)
-    col3.metric("المتبقي", unsorted_count)
+    col2.metric("وصل / تم فرزه", sorted_count)
+    col3.metric("المتبقي", remaining_count)
 
     st.markdown("---")
 
-    customers = sorted(df["customer_name"].dropna().unique().tolist())
-
-    selected_customer = st.selectbox(
-        "فلترة حسب الزبونة:",
-        ["الكل"] + customers
-    )
-
-    filtered_df = df.copy()
-
-    if selected_customer != "الكل":
-        filtered_df = filtered_df[filtered_df["customer_name"] == selected_customer]
-
-        c_total = len(filtered_df)
-        c_sorted = len(filtered_df[filtered_df["status"] == "تم فرزه"])
-        st.info(f"📦 {selected_customer}: تم فرز {c_sorted} من {c_total}")
-
-        if c_total > 0:
-            st.progress(c_sorted / c_total)
-
-    status_filter = st.selectbox(
-        "فلترة حسب الحالة:",
-        ["الكل", "لم يتم فرزه", "تم فرزه"]
-    )
-
-    if status_filter != "الكل":
-        filtered_df = filtered_df[filtered_df["status"] == status_filter]
-
-    st.dataframe(filtered_df, use_container_width=True)
-
-    csv = filtered_df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        "📥 تحميل البيانات المعروضة",
-        data=csv,
-        file_name="orders_filtered.csv",
-        mime="text/csv"
-    )
-
-    st.markdown("---")
-    st.subheader("📌 عداد كل زبونة")
+    st.subheader("👥 حالة كل زبونة")
 
     if not df.empty:
         summary = df.groupby("customer_name").agg(
             total=("sku", "count"),
-            sorted_items=("status", lambda x: (x == "تم فرزه").sum())
+            arrived=("status", lambda x: (x == "تم فرزه").sum())
         ).reset_index()
 
-        summary["remaining"] = summary["total"] - summary["sorted_items"]
-        summary["progress"] = summary["sorted_items"].astype(str) + " / " + summary["total"].astype(str)
+        summary["remaining"] = summary["total"] - summary["arrived"]
+        summary["done"] = summary["remaining"] == 0
 
-        st.dataframe(summary, use_container_width=True)
+        for _, row in summary.iterrows():
+            name = row["customer_name"]
+            total_items = int(row["total"])
+            arrived = int(row["arrived"])
+            remaining = int(row["remaining"])
+            is_done = bool(row["done"])
+
+            card_class = "done-card" if is_done else "pending-card"
+            mark = "✅" if is_done else "⏳"
+            title = f"{mark} {name}"
+
+            st.markdown(f'<div class="{card_class}">', unsafe_allow_html=True)
+            st.markdown(f"### {title}")
+
+            c1, c2, c3 = st.columns(3)
+            c1.metric("كل القطع", total_items)
+            c2.metric("وصل", arrived)
+            c3.metric("ضالها", remaining)
+
+            if total_items > 0:
+                st.progress(arrived / total_items)
+
+            if is_done:
+                st.success("طلب الزبونة خلص بالكامل ✔️")
+            else:
+                st.warning(f"لسه ضايل {remaining} قطعة.")
+
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("---")
+
+        customers = sorted(df["customer_name"].dropna().unique().tolist())
+
+        selected_customer = st.selectbox("عرض تفاصيل زبونة:", ["الكل"] + customers)
+
+        filtered_df = df.copy()
+
+        if selected_customer != "الكل":
+            filtered_df = filtered_df[filtered_df["customer_name"] == selected_customer]
+
+        status_filter = st.selectbox("فلترة حسب الحالة:", ["الكل", "لم يتم فرزه", "تم فرزه"])
+
+        if status_filter != "الكل":
+            filtered_df = filtered_df[filtered_df["status"] == status_filter]
+
+        st.dataframe(filtered_df, use_container_width=True)
+
+        csv = filtered_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "📥 تحميل البيانات المعروضة",
+            data=csv,
+            file_name="orders_filtered.csv",
+            mime="text/csv"
+        )
     else:
         st.info("لا توجد بيانات بعد.")
 
